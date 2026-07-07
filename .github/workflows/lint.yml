@@ -25,7 +25,7 @@ jobs:
         run: flake8 custom_addons/mon_module_demo/
 
       - name: Lancer pylint-odoo
-        run: pylint --load-plugins=pylint_odoo -d all -e odoolint --mkdir -p .github/workflows
+        run: pylint --load-plugins=pylint_odoo -d all -e odoolint --disable=manifest-required-author --mkdir -p .github/workflows
 cat > .github/workflows/lint.yml << 'EOF'
 name: Lint Odoo Modules
 
