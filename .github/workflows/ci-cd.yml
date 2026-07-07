@@ -81,7 +81,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
   deploy-staging:
-    needs: [build, security_scan]
+    needs: [build, security-scan]
     if: github.ref == 'refs/heads/staging'
     runs-on: self-hosted
     environment: staging
@@ -94,7 +94,7 @@ jobs:
           docker compose up -d
 
   deploy-production:
-    needs: [build ,security_scan]
+    needs: [build ,security-scan]
     if: github.ref == 'refs/heads/main'
     runs-on: self-hosted
     environment: production
