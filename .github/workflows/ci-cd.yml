@@ -66,13 +66,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Convertir le nom du repo en minuscules
+        id: lowercase
+        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Build et push de l'image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/odoo-baam:${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/odoo-baam:latest
+            ghcr.io/${{ steps.lowercase.outputs.owner }}/odoo-baam:${{ github.sha }}
+            ghcr.io/${{ steps.lowercase.outputs.owner }}/odoo-baam:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
