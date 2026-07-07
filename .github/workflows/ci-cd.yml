@@ -81,7 +81,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
   deploy-staging:
-    needs: build
+    needs: [build, security_scan]
     if: github.ref == 'refs/heads/staging'
     runs-on: self-hosted
     environment: staging
@@ -94,7 +94,7 @@ jobs:
           docker compose up -d
 
   deploy-production:
-    needs: build
+    needs: [build ,security_scan]
     if: github.ref == 'refs/heads/main'
     runs-on: self-hosted
     environment: production
@@ -105,3 +105,14 @@ jobs:
           cd ~/deployments/production
           docker compose pull
           docker compose up -d
+  security-scan:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scan de vulnérabilités avec Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/ilyaszaouia/odoo-baam:${{ github.sha }}
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
