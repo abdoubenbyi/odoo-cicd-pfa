@@ -223,7 +223,7 @@ jobs:
           docker compose stop odoo
 
           if [ "$PREVIOUS_IMAGE" != "none" ]; then
-            sed -i "s|image:.*|image: $PREVIOUS_IMAGE|" docker-compose.yml
+            yq -i ".services.odoo.image = \"$PREVIOUS_IMAGE\"" docker-compose.yml
           fi
 
           docker cp ~/backups/staging/${BACKUP_FILE} odoo_db_staging:/tmp/restore.dump
