@@ -20,7 +20,8 @@ class MaterielConstruction(models.Model):
     ('finition', 'Finition'),
         ],
         string='Catégorie',
-        default='gros_oeuvre')
+        default='gros_oeuvre'
+    )
 
     @api.depends('quantite', 'prix_unitaire')
     def _compute_valeur_stock(self):
