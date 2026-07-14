@@ -84,6 +84,17 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Installer Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Signer l'image
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          echo "${{ secrets.COSIGN_PRIVATE_KEY }}" > cosign.key
+          cosign sign --key cosign.key --yes ${{ steps.lowercase.outputs.owner }}/odoo-baam:${{ github.sha }}
+          rm cosign.key
+
       - name: Notifier Discord en cas d'échec
         if: failure()
         run: |
@@ -95,6 +106,9 @@ jobs:
             }]
           }' "${{ secrets.DISCORD_WEBHOOK }}"
 
+      - name: Installer Cosign
+        uses: sigstore/cosign-installer@v3
+
   # ============================================================
   # 3. SECURITY SCAN — Trivy analyse l'image buildée
   # ============================================================
@@ -103,6 +117,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Scan de vulnérabilités avec Trivy
+
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+
+
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ needs.build-image.outputs.image_tag }}
@@ -177,6 +197,11 @@ jobs:
     environment: staging
     steps:
       - uses: actions/checkout@v4
+
+      - name: Vérifier la signature de l'image avant déploiement
+        run: |
+          cosign verify --key ~/cosign-keys/cosign.pub ${{ needs.build-image.outputs.image_tag }} \
+            || (echo "::error::Signature invalide — déploiement refusé" && exit 1)
 
       - name: Backup PostgreSQL avant déploiement
         id: backup
@@ -267,6 +292,11 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
+
+      - name: Vérifier la signature de l'image avant déploiement
+        run: |
+          cosign verify --key ~/cosign-keys/cosign.pub ${{ needs.build-image.outputs.image_tag }} \
+            || (echo "::error::Signature invalide — déploiement refusé" && exit 1)
 
       - name: Déterminer la couleur active et la cible
         id: color
