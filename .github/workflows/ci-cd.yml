@@ -84,17 +84,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Installer Cosign
-        uses: sigstore/cosign-installer@v3
-
-      - name: Signer l'image
-        env:
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-        run: |
-          echo "${{ secrets.COSIGN_PRIVATE_KEY }}" > cosign.key
-          cosign sign --key cosign.key --yes ${{ steps.lowercase.outputs.owner }}/odoo-baam:${{ github.sha }}
-          rm cosign.key
-
       - name: Notifier Discord en cas d'échec
         if: failure()
         run: |
