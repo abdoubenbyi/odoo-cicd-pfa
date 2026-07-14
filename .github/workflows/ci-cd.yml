@@ -279,6 +279,43 @@ jobs:
 
       - name: Déterminer la couleur active et la cible
         id: color
+
+      - name: Déterminer la couleur inactive
+        id: color
+        run: |
+          if grep -q "odoo_blue" ~/deployments/production/nginx/nginx.conf; then
+            echo "target=green" >> $GITHUB_OUTPUT
+            echo "current=blue" >> $GITHUB_OUTPUT
+          else
+            echo "target=blue" >> $GITHUB_OUTPUT
+            echo "current=green" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Déployer la nouvelle version sur la couleur inactive
+        run: |
+          echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          cd ~/deployments/production
+          docker compose pull odoo_${{ steps.color.outputs.target }}
+          docker compose up -d odoo_${{ steps.color.outputs.target }}
+
+      - name: Health check sur la couleur inactive
+        run: |
+          for i in {1..15}; do
+            if docker exec odoo_${{ steps.color.outputs.target }} curl -sf http://localhost:8069/web/login > /dev/null; then
+              echo "✅ Nouvelle version prête"
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+
+      - name: Basculer le trafic nginx vers la nouvelle couleur
+        run: |
+          sed -i "s/odoo_${{ steps.color.outputs.current }}/odoo_${{ steps.color.outputs.target }}/" ~/deployments/production/nginx/nginx.conf
+          docker exec odoo_proxy nginx -s reload
+          echo "Trafic basculé vers odoo_${{ steps.color.outputs.target }}"
+
+      - name: Sauvegarder le tag actuellement déployé
         run: |
           if grep -q "odoo_blue" ~/deployments/production/nginx/nginx.conf; then
             echo "target=green" >> $GITHUB_OUTPUT
